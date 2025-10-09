@@ -13,6 +13,9 @@ from rest_framework.authentication import TokenAuthentication
 
 from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
+from rest_framework.decorators import action
+
+
 
 class LoginAPI(APIView):
     def post(self,request):
@@ -85,13 +88,19 @@ def login(request):
     return Response(serializer.errors)
 
 
+from django.core.paginator import Paginator
+
 class PersonAPI(APIView):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
     def get(self,request):
         print(request.user)
-        objs = Person.objects.filter(color_isnull = False)
-        serializer = PeopleSerializer(objs, many = True)
+        objs = Person.objects.all()
+        page = request.GET.get('page',1)
+        page_size = 3
+        Paginator = Paginator(objs, page_size)
+        serializer = PeopleSerializer(Paginator.page(page), many = True)
+    
         return Response(serializer.data)
         
     
@@ -186,3 +195,10 @@ class PeopleViewSet(viewsets.ModelViewSet):
 
         serializer = PeopleSerializer(queryset, many = True)
         return Response({'status' : 200 , 'data' : serializer.data}, status = status.HTTP_204_NO_CONTENT) 
+    
+    @action(detail=False,methods = ['post'])
+    def send_mail_to_person(self,request):
+        return Response({
+            'status': True,
+            'message' : 'email sent successfully'
+        })
